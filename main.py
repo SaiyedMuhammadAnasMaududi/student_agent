@@ -198,23 +198,20 @@
 
 
 # Sample 2
-import os
 import asyncio
 import streamlit as st
 from openai import AsyncOpenAI
 from agents import Agent, Runner, set_tracing_disabled, OpenAIChatCompletionsModel
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Set tracing disabled
 set_tracing_disabled(True)
 
-# Fetch keys early with fallback error
-OPEN_ROUTER_API_KEY = os.getenv("OPEN_ROUTER_API_KEY")
-OPEN_ROUTER_API_BASE = os.getenv("OPEN_ROUTER_API_BASE")
+# ✅ Get keys using Streamlit Secrets (works both locally and in cloud if secrets.toml is set)
+OPEN_ROUTER_API_KEY = st.secrets.get("OPEN_ROUTER_API_KEY")
+OPEN_ROUTER_API_BASE = st.secrets.get("OPEN_ROUTER_API_BASE")
 
 if not OPEN_ROUTER_API_KEY or not OPEN_ROUTER_API_BASE:
-    st.error("❌ API credentials are missing. Please check your `.env` or `secrets.toml`.")
+    st.error("❌ API credentials are missing. Please check your `.streamlit/secrets.toml` or Streamlit Cloud secrets.")
     st.stop()
 
 model = "deepseek/deepseek-r1-0528-qwen3-8b:free"
@@ -322,7 +319,7 @@ if user_input and user_input.strip():
             st.session_state.questions.append(user_input.strip())
             st.session_state.answers.append(answer.strip())
         except Exception as e:
-            st.error(f"⚠️ Something went wrong while contacting the agent.\n\n`{e}`")
+            st.error(f"⚠️ Error from agent:\n\n`{e}`")
 
 # Chat display
 for q, a in zip(st.session_state.questions, st.session_state.answers):
