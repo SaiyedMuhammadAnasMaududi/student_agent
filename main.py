@@ -214,7 +214,7 @@ if not OPEN_ROUTER_API_KEY or not OPEN_ROUTER_API_BASE:
     st.error("❌ API credentials are missing. Please check your `.streamlit/secrets.toml` or Streamlit Cloud secrets.")
     st.stop()
 
-model = "deepseek/deepseek-r1-0528-qwen3-8b:free"
+model = "google/gemini-2.0-flash-exp:free"
 st.set_page_config(page_title="🎓 Scholar Assistant", layout="wide")
 
 # Session init
