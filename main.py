@@ -205,29 +205,35 @@ from openai import AsyncOpenAI
 from agents import Agent, Runner, set_tracing_disabled, OpenAIChatCompletionsModel
 from dotenv import load_dotenv
 
-# Load env vars and disable tracing
+# Load environment variables
 load_dotenv()
 set_tracing_disabled(True)
-model = "deepseek/deepseek-r1-0528-qwen3-8b:free"
 
+# Fetch keys early with fallback error
+OPEN_ROUTER_API_KEY = os.getenv("OPEN_ROUTER_API_KEY")
+OPEN_ROUTER_API_BASE = os.getenv("OPEN_ROUTER_API_BASE")
+
+if not OPEN_ROUTER_API_KEY or not OPEN_ROUTER_API_BASE:
+    st.error("❌ API credentials are missing. Please check your `.env` or `secrets.toml`.")
+    st.stop()
+
+model = "deepseek/deepseek-r1-0528-qwen3-8b:free"
 st.set_page_config(page_title="🎓 Scholar Assistant", layout="wide")
 
-# Initialize session state
+# Session init
 st.session_state.setdefault("answers", [])
 st.session_state.setdefault("questions", [])
 st.session_state.setdefault("user_name", "")
 
-# UI Theme + Font
+# Styling
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Merriweather&display=swap');
-
     html, body, .stApp {
         font-family: 'Merriweather', serif;
         background-color: #f6f3e9;
         color: #333;
     }
-
     .chat-container {
         max-width: 800px;
         margin: auto;
@@ -236,7 +242,6 @@ st.markdown("""
         border-radius: 12px;
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-
     .message-bubble {
         background-color: #e9f5db;
         padding: 16px;
@@ -244,7 +249,6 @@ st.markdown("""
         margin: 12px 0;
         border-left: 4px solid #99bc85;
     }
-
     .response-bubble {
         background-color: #f5eee6;
         padding: 16px;
@@ -252,7 +256,6 @@ st.markdown("""
         margin: 12px 0;
         border-left: 4px solid #cfb997;
     }
-
     input, .stTextInput input {
         background-color: #fff;
         padding: 10px;
@@ -283,7 +286,7 @@ st.markdown("""
 <p style='margin-top:-10px; font-size:16px;'>An intelligent companion for your academic journey</p>
 """, unsafe_allow_html=True)
 
-# Ask name if not provided
+# Ask for name
 if not st.session_state.user_name:
     name = st.text_input("What's your name?")
     if name.strip():
@@ -297,12 +300,11 @@ instruction_map = {
     "Provide study tips": "You are a study coach. Provide helpful, practical advice.",
     "Summarize small text passages": "You are a summarizer. Rewrite input clearly and concisely."
 }
-
 instruction = instruction_map.get(mode, "")
 
-# Async agent logic
+# Async agent function
 async def ask_agent(prompt, instructions, user_name):
-    client = AsyncOpenAI(api_key=os.getenv("OPEN_ROUTER_API_KEY"), base_url=os.getenv("OPEN_ROUTER_API_BASE"))
+    client = AsyncOpenAI(api_key=OPEN_ROUTER_API_KEY, base_url=OPEN_ROUTER_API_BASE)
     agent = Agent(
         name="student-agent",
         instructions=f"{instructions} Always refer to the user as {user_name}.",
@@ -311,13 +313,16 @@ async def ask_agent(prompt, instructions, user_name):
     result = await Runner.run(agent, input=prompt)
     return result.final_output
 
-# Chat input
+# Input
 user_input = st.chat_input(f"What would you like to ask, {st.session_state.user_name}?")
 if user_input and user_input.strip():
     with st.spinner("Thinking..."):
-        answer = asyncio.run(ask_agent(user_input.strip(), instruction, st.session_state.user_name))
-    st.session_state.questions.append(user_input.strip())
-    st.session_state.answers.append(answer.strip())
+        try:
+            answer = asyncio.run(ask_agent(user_input.strip(), instruction, st.session_state.user_name))
+            st.session_state.questions.append(user_input.strip())
+            st.session_state.answers.append(answer.strip())
+        except Exception as e:
+            st.error(f"⚠️ Something went wrong while contacting the agent.\n\n`{e}`")
 
 # Chat display
 for q, a in zip(st.session_state.questions, st.session_state.answers):
@@ -325,6 +330,7 @@ for q, a in zip(st.session_state.questions, st.session_state.answers):
     st.markdown(f"<div class='response-bubble'><strong>Assistant:</strong> {a}</div>", unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
+
 # if __name__ == "__main__":
 #     asyncio.run(main(user_input.strip(),st.session_state.selected_model))
 
