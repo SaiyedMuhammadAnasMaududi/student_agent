@@ -209,9 +209,14 @@ from dotenv import load_dotenv
 load_dotenv()
 set_tracing_disabled(True)
 
-# ✅ Support Streamlit Secrets
-os.environ["OPEN_ROUTER_API_KEY"] = st.secrets["OPEN_ROUTER_API_KEY"]
-os.environ["OPEN_ROUTER_API_BASE"] = st.secrets["OPEN_ROUTER_API_BASE"]
+# ✅ Support Streamlit Secrets or fallback to .env
+os.environ["OPEN_ROUTER_API_KEY"] = st.secrets.get("OPEN_ROUTER_API_KEY", os.getenv("OPEN_ROUTER_API_KEY", ""))
+os.environ["OPEN_ROUTER_API_BASE"] = st.secrets.get("OPEN_ROUTER_API_BASE", os.getenv("OPEN_ROUTER_API_BASE", ""))
+
+# Check if keys are missing
+if not os.environ["OPEN_ROUTER_API_KEY"]:
+    st.error("❌ API Key not found. Please check your Streamlit Secrets or .env file.")
+    st.stop()
 
 model = "deepseek/deepseek-r1-0528-qwen3-8b:free"
 st.set_page_config(page_title="🎓 Scholar Assistant", layout="wide")
@@ -301,6 +306,7 @@ instruction_map = {
     "Provide study tips": "You are a study coach. Provide helpful, practical advice.",
     "Summarize small text passages": "You are a summarizer. Rewrite input clearly and concisely."
 }
+
 instruction = instruction_map.get(mode, "")
 
 # Async agent logic
@@ -331,7 +337,6 @@ for q, a in zip(st.session_state.questions, st.session_state.answers):
     st.markdown(f"<div class='response-bubble'><strong>Assistant:</strong> {a}</div>", unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
-# Uncomment the following lines to run the app directly
 # if __name__ == "__main__":
 #     asyncio.run(main(user_input.strip(),st.session_state.selected_model))
 
