@@ -205,20 +205,11 @@ from openai import AsyncOpenAI
 from agents import Agent, Runner, set_tracing_disabled, OpenAIChatCompletionsModel
 from dotenv import load_dotenv
 
-# Load env vars
+# Load env vars and disable tracing
 load_dotenv()
 set_tracing_disabled(True)
-
-# ✅ Support Streamlit Secrets or fallback to .env
-os.environ["OPEN_ROUTER_API_KEY"] = st.secrets.get("OPEN_ROUTER_API_KEY", os.getenv("OPEN_ROUTER_API_KEY", ""))
-os.environ["OPEN_ROUTER_API_BASE"] = st.secrets.get("OPEN_ROUTER_API_BASE", os.getenv("OPEN_ROUTER_API_BASE", ""))
-
-# Check if keys are missing
-if not os.environ["OPEN_ROUTER_API_KEY"]:
-    st.error("❌ API Key not found. Please check your Streamlit Secrets or .env file.")
-    st.stop()
-
 model = "deepseek/deepseek-r1-0528-qwen3-8b:free"
+
 st.set_page_config(page_title="🎓 Scholar Assistant", layout="wide")
 
 # Initialize session state
@@ -311,10 +302,7 @@ instruction = instruction_map.get(mode, "")
 
 # Async agent logic
 async def ask_agent(prompt, instructions, user_name):
-    client = AsyncOpenAI(
-        api_key=os.getenv("OPEN_ROUTER_API_KEY"),
-        base_url=os.getenv("OPEN_ROUTER_API_BASE")
-    )
+    client = AsyncOpenAI(api_key=os.getenv("OPEN_ROUTER_API_KEY"), base_url=os.getenv("OPEN_ROUTER_API_BASE"))
     agent = Agent(
         name="student-agent",
         instructions=f"{instructions} Always refer to the user as {user_name}.",
